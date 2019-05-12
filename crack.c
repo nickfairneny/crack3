@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "md5.h"
 
@@ -17,6 +19,14 @@ struct entry
     char hash[33];
     
 };
+
+int file_length(char *filename)
+{
+	struct stat info;
+	if (stat(filename, &info) == -1) return -1;
+	else return info.st_size;
+	
+}
 
 // TODO
 // Read in the dictionary file and return an array of structs.
@@ -53,7 +63,7 @@ struct entry *read_dictionary(char *filename, int *size)
     {
         if (contents[i] == '\0')
         {
-            strcopy(cc[0].password, &contents[0]);
+            strcpy(cc[0].password, &contents[0]);
             cc[0].password = strlen(cc[0], password);
             char *nextcc = &contents[i] + 1;
             //cc[lines].password = nextcc;
@@ -83,11 +93,12 @@ int main(int argc, char *argv[])
     
     int dictlen = file_length(argv[1]);
     // TODO: Read the dictionary file into an array of entry structures
-    struct entry *dict = read_dictionary(argv[1], dictlen);
+    struct entry *dict = read_dictionary(argv[1], &dictlen);
     
     // TODO: Sort the hashed dictionary using qsort.
     // You will need to provide a comparison function.
-    qsort(dict, size, sizeof(struct entry), comp(dict[0], dict[1]));
+    
+    qsort(dict, size, sizeof(struct entry), comp);
 
     // TODO
     // Open the hash file for reading.
@@ -103,7 +114,26 @@ int main(int argc, char *argv[])
     // If you find it, get the corresponding plaintext dictionary word.
     // Print out both the hash and word.
     // Need only one loop. (Yay!)
+
+    int dlen;
+    struct entry *chars = read_dictionary("hashes.txt", &dlen);
+    char target[50];
     
+    for (int i = 0; i < sizeof(dict); i++)
+    {
+        strcpy(target, chars[i].hash);
+        
+        struct entry *found = bsearch(target, h, dlen, sizeof(struct entry), comp);
+        
+        if (found == NULL)
+        {
+            printf("Not found\n");
+        }
+        else
+        {
+            printf("Found %s %s\n", found->password, found->hash);
+        }
+}
     
     
 }
