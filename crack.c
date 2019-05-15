@@ -58,15 +58,26 @@ struct entry *read_dictionary(char *filename, int *size)
     }
     
     struct entry *cc = malloc(lines * sizeof(struct entry));
+    int passcount = 0;
     
     for (int i = 0; i < filelength; i++)
     {
         if (contents[i] == '\0')
         {
-            strcpy(cc[0].password, &contents[0]);
-            cc[0].password = strlen(cc[0], password);
-            char *nextcc = &contents[i] + 1;
-            //cc[lines].password = nextcc;
+            if (passcount == 0)
+            {
+                strcpy(cc[0].password, &contents[0]);
+                char *hash = md5(&contents[0], HASH_LEN);
+                strcpy(cc[0].hash, hash);
+                passcount++;
+                free(hash);
+            }
+            else
+            {
+                strcpy(cc[passcount].password, &contents[i + 1]);
+                char *hash = md5(&contents[i + 1], HASH_LEN);
+                strcpy(cc[passcount].hash, hash);
+            }
         }
     }
     
@@ -77,9 +88,9 @@ struct entry *read_dictionary(char *filename, int *size)
 int comp(const void *a, const void *b)
     {
         
-        struct entry *ca = (struct entry *)a;    
+        char *ca = (char *)a;    
         struct entry *cb = (struct entry *)b; 
-        return strcmp((*ca).password, (*cb).password);
+        return strcmp(ca, (*cb).password);
         
     }
 
@@ -91,40 +102,48 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    int dictlen = file_length(argv[1]);
-    // TODO: Read the dictionary file into an array of entry structures
-    struct entry *dict = read_dictionary(argv[1], &dictlen);
-    
-    // TODO: Sort the hashed dictionary using qsort.
-    // You will need to provide a comparison function.
-    
-    qsort(dict, size, sizeof(struct entry), comp);
-
-    // TODO
-    // Open the hash file for reading.
     FILE *h = fopen(argv[2], "r");
     if(!h)
     {
         printf("Can't open %s for reading", argv[2]);
     }
+    
+    // TODO: Read the dictionary file into an array of entry structures
+    
+    int dictlen = file_length(argv[2]);
+    struct entry *dict = read_dictionary(argv[2], &dictlen);
 
+    // TODO: Sort the hashed dictionary using qsort.
+    // You will need to provide a comparison function.
+    
+     qsort(dict, size, sizeof(struct entry), comp);
+     
+    // TODO
+    // Open the hash file for reading.
+    
+    FILE *f = fopen(argv[1], "r");
+    if(!f)
+    {
+        printf("Can't open %s for reading", argv[1]);
+    }
+
+    int hlen = file_length(argv[1]);
+    struct entry *hashfile = read_dictionary(argv[1], &hlen);
+    char target[HASH_LEN];
+    
     // TODO
     // For each hash, search for it in the dictionary using
     // binary search.
     // If you find it, get the corresponding plaintext dictionary word.
     // Print out both the hash and word.
     // Need only one loop. (Yay!)
-
-    int dlen;
-    struct entry *chars = read_dictionary("hashes.txt", &dlen);
-    char target[50];
     
-    for (int i = 0; i < sizeof(dict); i++)
+    for (int i = 0; i < hlen; i++)
     {
-        strcpy(target, chars[i].hash);
-        
-        struct entry *found = bsearch(target, h, dlen, sizeof(struct entry), comp);
-        
+        //if (strcmp(hashfile->password, dict->hash) == 0) target = hashfile->password;
+        //printf("debug\n");
+        struct entry *found = bsearch(hashfile->password, dict, dictlen, sizeof(struct entry), comp);
+    
         if (found == NULL)
         {
             printf("Not found\n");
@@ -133,7 +152,10 @@ int main(int argc, char *argv[])
         {
             printf("Found %s %s\n", found->password, found->hash);
         }
-}
+        
+    }
     
+    fclose(f);
+    fclose(h);
     
 }
