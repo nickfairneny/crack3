@@ -77,7 +77,8 @@ struct entry *read_dictionary(char *filename, int *size)
                 else
                 {
                     strcpy(cc[passcount].password, &contents[i + 1]);
-                    char *hash = md5(cc[passcount].password, j);
+                    //printf("Password: %s\n", cc[passcount].password);
+                    char *hash = md5(cc[passcount].password, strlen(cc[passcount].password));
                     strcpy(cc[passcount].hash, hash);
                     passcount++;
                     j = 1;
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
     
     int dictlen = file_length(argv[2]);
     struct entry *dict = read_dictionary(argv[2], &dictlen);
-
+    
     // TODO: Sort the hashed dictionary using qsort.
     // You will need to provide a comparison function.
     
@@ -157,20 +158,20 @@ int main(int argc, char *argv[])
     {
         struct entry *found = bsearch(hashfile[i].password, dict, dictlen, sizeof(struct entry), comp);
         
-        printf("Hashfile password entry: %s\n", hashfile[i].password);
+        printf("HashP: %s\n", hashfile[i].password);
+        printf("DHash: %s\n", dict[i].hash);
+        printf("DPass: %s\n", dict[i].password);
         
-        printf("Dictionary hash: %s\n", dict[i].hash);
-        printf("Dictionary password: %s\n", dict[i].password);
-        /*
         if (found == NULL)
         {
-            printf("Not found\n");
+            //printf("Not found\n");
+            continue;
         }
         else
         {
             printf("Found %s %s\n", found->password, found->hash);
         }
-        */
+        
     }
     
     fclose(f);
