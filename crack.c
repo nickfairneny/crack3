@@ -59,26 +59,33 @@ struct entry *read_dictionary(char *filename, int *size)
     
     struct entry *cc = malloc(lines * sizeof(struct entry));
     int passcount = 0;
+    int j = 1;
     
     for (int i = 0; i < filelength; i++)
     {
         if (contents[i] == '\0')
         {
-            if (passcount == 0)
-            {
-                strcpy(cc[0].password, &contents[0]);
-                char *hash = md5(&contents[0], HASH_LEN);
-                strcpy(cc[0].hash, hash);
-                passcount++;
-                free(hash);
-            }
-            else
-            {
-                strcpy(cc[passcount].password, &contents[i + 1]);
-                char *hash = md5(&contents[i + 1], HASH_LEN);
-                strcpy(cc[passcount].hash, hash);
-            }
+                if (passcount == 0)
+                {
+                    strcpy(cc[0].password, &contents[0]);
+                    char *hash = md5(&contents[0], i);
+                    strcpy(cc[0].hash, hash);
+                    passcount++;
+                    j = 1;
+                    free(hash);
+                }
+                else
+                {
+                    strcpy(cc[passcount].password, &contents[i + 1]);
+                    char *hash = md5(cc[passcount].password, j);
+                    strcpy(cc[passcount].hash, hash);
+                    passcount++;
+                    j = 1;
+                    free(hash);
+                }
         }
+        
+        j++;
     }
     
     *size = lines;
@@ -129,8 +136,7 @@ int main(int argc, char *argv[])
 
     int hlen = file_length(argv[1]);
     struct entry *hashfile = read_dictionary(argv[1], &hlen);
-    char target[HASH_LEN];
-    
+
     // TODO
     // For each hash, search for it in the dictionary using
     // binary search.
@@ -138,12 +144,24 @@ int main(int argc, char *argv[])
     // Print out both the hash and word.
     // Need only one loop. (Yay!)
     
+    /*
     for (int i = 0; i < hlen; i++)
     {
-        //if (strcmp(hashfile->password, dict->hash) == 0) target = hashfile->password;
-        //printf("debug\n");
-        struct entry *found = bsearch(hashfile->password, dict, dictlen, sizeof(struct entry), comp);
+       printf("%s\n", hashfile[i].password);
+       printf("%s\n", dict[i].password);
+        
+    }
+    */
     
+    for (int i = 0; i < hlen; i++)
+    {
+        struct entry *found = bsearch(hashfile[i].password, dict, dictlen, sizeof(struct entry), comp);
+        
+        printf("Hashfile password entry: %s\n", hashfile[i].password);
+        
+        printf("Dictionary hash: %s\n", dict[i].hash);
+        printf("Dictionary password: %s\n", dict[i].password);
+        /*
         if (found == NULL)
         {
             printf("Not found\n");
@@ -152,7 +170,7 @@ int main(int argc, char *argv[])
         {
             printf("Found %s %s\n", found->password, found->hash);
         }
-        
+        */
     }
     
     fclose(f);
