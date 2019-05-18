@@ -77,7 +77,6 @@ struct entry *read_dictionary(char *filename, int *size)
                 else
                 {
                     strcpy(cc[passcount].password, &contents[i + 1]);
-                    //printf("Password: %s\n", cc[passcount].password);
                     char *hash = md5(cc[passcount].password, strlen(cc[passcount].password));
                     strcpy(cc[passcount].hash, hash);
                     passcount++;
@@ -93,14 +92,84 @@ struct entry *read_dictionary(char *filename, int *size)
     return cc;
 }
 
+struct entry *read_hash(char *filename, int *size)
+{
+    int filelength = file_length(filename);
+    
+    FILE *c = fopen(filename, "r");
+    if(!c)
+    {
+        printf("Can't open %s for reading", filename);
+    }
+
+    char *contents = malloc(filelength);
+    fread(contents, 1, filelength, c);
+    fclose(c);
+    
+    int lines = 0;
+    
+    for (int i = 0; i < filelength; i++)
+    {
+        if (contents[i] == '\n') 
+        {
+            contents[i] = '\0';
+            lines++;
+        }
+    }
+    
+    struct entry *cc = malloc(lines * sizeof(struct entry));
+    int passcount = 0;
+    int j = 1;
+    
+    for (int i = 0; i < filelength; i++)
+    {
+        if (contents[i] == '\0')
+        {
+                if (passcount == 0)
+                {
+                    strcpy(cc[0].hash, &contents[0]);
+                    //char *hash = md5(&contents[0], i);
+                    //strcpy(cc[0].hash, hash);
+                    passcount++;
+                    j = 1;
+                    //free(hash);
+                }
+                else
+                {
+                    strcpy(cc[passcount].hash, &contents[i + 1]);
+                    //char *hash = md5(cc[passcount].password, strlen(cc[passcount].password));
+                    //strcpy(cc[passcount].hash, hash);
+                    passcount++;
+                    j = 1;
+                    //free(hash);
+                }
+        }
+        
+        j++;
+    }
+    
+    *size = lines;
+    return cc;
+}
+
+int comphash(const void *a, const void *b)
+    {
+        
+        //char *ca = (char *)a;    
+        //struct entry *cb = (struct entry *)b; 
+        //return strcmp(ca, (*cb).password);
+        return strcmp((*(struct entry *)a).hash, (*(struct entry *)b).hash);
+        
+    }
+    
 int comp(const void *a, const void *b)
     {
         
         char *ca = (char *)a;    
         struct entry *cb = (struct entry *)b; 
         return strcmp(ca, (*cb).password);
-        
-    }
+      
+    }    
 
 int main(int argc, char *argv[])
 {
@@ -136,7 +205,7 @@ int main(int argc, char *argv[])
     }
 
     int hlen = file_length(argv[1]);
-    struct entry *hashfile = read_dictionary(argv[1], &hlen);
+    struct entry *hashfile = read_hash(argv[1], &hlen);
 
     // TODO
     // For each hash, search for it in the dictionary using
@@ -145,31 +214,25 @@ int main(int argc, char *argv[])
     // Print out both the hash and word.
     // Need only one loop. (Yay!)
     
-    /*
-    for (int i = 0; i < hlen; i++)
-    {
-       printf("%s\n", hashfile[i].password);
-       printf("%s\n", dict[i].password);
-        
-    }
-    */
+    qsort(dict, dictlen, sizeof(struct entry), comp);
     
     for (int i = 0; i < hlen; i++)
     {
-        struct entry *found = bsearch(hashfile[i].password, dict, dictlen, sizeof(struct entry), comp);
+        char *key = hashfile[i].hash;
+       
+        struct entry *found = bsearch(key, dict, dictlen, sizeof(struct entry), comphash);
         
-        printf("HashP: %s\n", hashfile[i].password);
-        printf("DHash: %s\n", dict[i].hash);
-        printf("DPass: %s\n", dict[i].password);
-        
+        //printf("HashP: %s\n", hashfile[i].password);
+        //printf("DHash: %s\n", dict[i].hash);
+        //printf("DPass: %s\n", dict[i].password);
+        //printf("hlen: %i i: %i", hlen, i);
         if (found == NULL)
         {
-            //printf("Not found\n");
-            continue;
+            printf("Not found: %s\n", key);
         }
         else
         {
-            printf("Found %s %s\n", found->password, found->hash);
+            printf("Found: %s %s\n", found->password, found->hash);
         }
         
     }
