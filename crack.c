@@ -158,7 +158,8 @@ int comphash(const void *a, const void *b)
         //char *ca = (char *)a;    
         //struct entry *cb = (struct entry *)b; 
         //return strcmp(ca, (*cb).password);
-        return strcmp((*(struct entry *)a).hash, (*(struct entry *)b).hash);
+        //return strcmp((*(struct entry *)a).hash, (*(struct entry *)b).hash);
+        return strncmp(a, ((const struct entry *)b)->hash, sizeof(((struct entry *)0)->hash));
         
     }
     
@@ -214,11 +215,13 @@ int main(int argc, char *argv[])
     // Print out both the hash and word.
     // Need only one loop. (Yay!)
     
-    qsort(dict, dictlen, sizeof(struct entry), comp);
+    qsort(dict->hash, dictlen, sizeof(struct entry), comp);
+    
+    char key[33];
     
     for (int i = 0; i < hlen; i++)
     {
-        char *key = hashfile[i].hash;
+        strcpy(key, hashfile[i].hash);
        
         struct entry *found = bsearch(key, dict, dictlen, sizeof(struct entry), comphash);
         
